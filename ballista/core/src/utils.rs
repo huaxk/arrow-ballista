@@ -49,6 +49,7 @@ use datafusion::physical_plan::{metrics, ExecutionPlan, RecordBatchStream};
 use datafusion_proto::logical_plan::{
     AsLogicalPlan, DefaultLogicalExtensionCodec, LogicalExtensionCodec,
 };
+use deltalake::delta_datafusion::DeltaTableFactory;
 use futures::StreamExt;
 use log::error;
 use std::io::{BufWriter, Write};
@@ -261,6 +262,12 @@ pub fn create_df_ctx_with_ballista_query_planner<T: 'static + AsLogicalPlan>(
     )
     .with_query_planner(planner);
     session_state = session_state.with_session_id(session_id);
+
+    // registrer `DELTALAKE` datasource
+    session_state.table_factories_mut().insert("DELTATABLE".into(), Arc::new(DeltaTableFactory {}));
+    println!("{:?}", session_state.table_factories().keys());
+    deltalake::aws::register_handlers(None);
+
     // the SessionContext created here is the client side context, but the session_id is from server side.
     SessionContext::new_with_state(session_state)
 }
